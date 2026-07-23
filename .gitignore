@@ -1,0 +1,63 @@
+# Local Python environments and interpreter by-products.
+.venv/
+.venv_kt/
+__pycache__/
+*.py[cod]
+
+# Editor, test, and log noise.
+.DS_Store
+.vscode/
+.pytest_cache/
+*.log
+
+# Models, traces, workloads, and third-party trees are supplied outside Git.
+# Keep the asset contract, never the local symlinks or large payloads.
+assets/*
+!assets/README.md
+
+# Keep generated experiment payloads local. The selected latest report below is
+# deliberately small and records the current functional acceptance result.
+experiments/*
+!experiments/README.md
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/
+experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/*
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/REPORT.md
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/PIPELINE_ACCEPTANCE.md
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/correctness.json
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/pipeline_acceptance.json
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/provenance.json
+!experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723/action_traces.json
+
+# The two links below point back into the original monorepo and are useful only
+# on this machine. The self-contained historical reference remains tracked.
+reusable/inter_layer_predictor
+reusable/kt_migration_current
+
+# Historical M16-M19, Resident-Delta, baseline, and predictor material stays
+# on the original machine but is intentionally outside the current M20 repo.
+baseline/
+reusable/
+runtime/resident_delta/
+runtime/select_track.sh
+docs/01_research_report.md
+docs/02_evidence_and_baselines.md
+docs/03_assets_and_reuse.md
+docs/04_execution_plan.md
+docs/05_references.md
+docs/06_two_track_execution.md
+docs/08_weekly_progress_20260710_20260716.md
+docs/10_current_experiment_comparison_table.md
+runtime/m20/inter_layer_predictor/run_kt_runtime_ttft_throughput_compare.py
+runtime/m20/inter_layer_predictor/summarize_kt_gdb_comparison.py
+runtime/m20/inter_layer_predictor/summarize_m20_a1.py
+runtime/m20/inter_layer_predictor/summarize_m20_b_k_sweep.py
+runtime/m20/inter_layer_predictor/summarize_m20_b_pareto.py
+runtime/m20/inter_layer_predictor/summarize_traditional_kt_baselines.py
+runtime/m20/inter_layer_predictor/run_m20_c_corruption.py
+runtime/m20/scripts/run_current_hash_formal.sh
+runtime/m20/scripts/run_m20_b_large_buffer_screen.sh
+runtime/m20/scripts/run_m20_b_pareto_formal.sh
+runtime/m20/scripts/run_m20_b_pareto_screen.sh
+runtime/m20/scripts/run_m20_b_s8_k_sweep.sh
+runtime/m20/scripts/run_traditional_kt_baselines.sh
+runtime/m20/tests/m20_c_corruption_smoke.py

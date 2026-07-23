@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "complete": true,
+  "expected_pairs": 2,
+  "physical_paths_present": true,
+  "physical_paths_required": true,
+  "physical_path_requirement_passed": true,
+  "policy_outputs_match": true,
+  "cross_policy_output_comparison": "not_applicable_different_placement",
+  "replacement_budget_passed": true,
+  "replacement_budget_audits": [
+    {
+      "run_name": "r1_b1b_stage_full_oracle_min_delta_g4_s4_k1",
+      "max_replacements": 1,
+      "passed": true,
+      "checked_logical_source_actions": 509,
+      "checked_physical_source_actions": 0,
+      "violations": []
+    },
+    {
+      "run_name": "r1_b1b_stage_delta_replay_oracle_min_delta_g4_s4_k1",
+      "max_replacements": 1,
+      "passed": true,
+      "checked_logical_source_actions": 509,
+      "checked_physical_source_actions": 140,
+      "violations": []
+    },
+    {
+      "run_name": "r1_b1b_stage_delta_replay_oracle_min_delta_g4_s4_k1_async",
+      "max_replacements": 1,
+      "passed": true,
+      "checked_logical_source_actions": 509,
+      "checked_physical_source_actions": 140,
+      "violations": []
+    }
+  ],
+  "pairs": [
+    {
+      "repeat": 1,
+      "policy": "min_delta",
+      "planner": "r1_b1b_stage_full_oracle_min_delta_g4_s4_k1",
+      "replay": "r1_b1b_stage_delta_replay_oracle_min_delta_g4_s4_k1",
+      "replay_load_mode": "sync",
+      "outputs_match": true,
+      "mismatch_prompt_indices": [],
+      "prompt_count": 8,
+      "expected_actions": 509,
+      "planner_actions": 509,
+      "replay_actions": 509,
+      "action_counts_match": true,
+      "trace_file_sha256": "67f1d6b6a18cd65af9a9857dbf16a55f068b9df1b8b80b0e1ae0dd3dfd9e9c90",
+      "trace_chain_hash": "7377db67197abb3d7a2ac569e9284e2ed10bff1ff1e5ed56e4bf9b0a7c36bbcf"
+    },
+    {
+      "repeat": 1,
+      "policy": "min_delta",
+      "planner": "r1_b1b_stage_full_oracle_min_delta_g4_s4_k1",
+      "replay": "r1_b1b_stage_delta_replay_oracle_min_delta_g4_s4_k1_async",
+      "replay_load_mode": "async",
+      "outputs_match": true,
+      "mismatch_prompt_indices": [],
+      "prompt_count": 8,
+      "expected_actions": 509,
+      "planner_actions": 509,
+      "replay_actions": 509,
+      "action_counts_match": true,
+      "trace_file_sha256": "67f1d6b6a18cd65af9a9857dbf16a55f068b9df1b8b80b0e1ae0dd3dfd9e9c90",
+      "trace_chain_hash": "7377db67197abb3d7a2ac569e9284e2ed10bff1ff1e5ed56e4bf9b0a7c36bbcf"
+    }
+  ]
+}

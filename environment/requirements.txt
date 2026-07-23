@@ -1,0 +1,7 @@
+# Base versions recorded from the validated 2026-07-23 environment.
+# Install a CUDA-compatible PyTorch wheel for the target machine first.
+sglang-kt==0.6.3
+kt-kernel==0.5.0
+torch==2.9.1
+transformers==5.12.1
+numpy==2.2.6

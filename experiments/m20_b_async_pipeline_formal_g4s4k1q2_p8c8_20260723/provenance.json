@@ -1,0 +1,484 @@
+{
+  "created_at": "2026-07-23 13:31:24",
+  "runner": "/workspace/vl_moe_chunked_prefill_experiment/moe_layered_prefill_system/runtime/m20/inter_layer_predictor/run_m20_b.py",
+  "resource_snapshot": {
+    "logical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39,
+      40,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50,
+      51,
+      52,
+      53,
+      54,
+      55,
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63
+    ],
+    "logical_cpu_count": 64,
+    "physical_core_count": 64,
+    "physical_core_ids": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        4
+      ],
+      [
+        0,
+        5
+      ],
+      [
+        0,
+        8
+      ],
+      [
+        0,
+        9
+      ],
+      [
+        0,
+        12
+      ],
+      [
+        0,
+        13
+      ],
+      [
+        0,
+        16
+      ],
+      [
+        0,
+        17
+      ],
+      [
+        0,
+        20
+      ],
+      [
+        0,
+        21
+      ],
+      [
+        0,
+        24
+      ],
+      [
+        0,
+        25
+      ],
+      [
+        0,
+        28
+      ],
+      [
+        0,
+        29
+      ],
+      [
+        0,
+        32
+      ],
+      [
+        0,
+        33
+      ],
+      [
+        0,
+        36
+      ],
+      [
+        0,
+        37
+      ],
+      [
+        0,
+        40
+      ],
+      [
+        0,
+        41
+      ],
+      [
+        0,
+        44
+      ],
+      [
+        0,
+        45
+      ],
+      [
+        0,
+        48
+      ],
+      [
+        0,
+        49
+      ],
+      [
+        0,
+        52
+      ],
+      [
+        0,
+        53
+      ],
+      [
+        0,
+        56
+      ],
+      [
+        0,
+        57
+      ],
+      [
+        0,
+        60
+      ],
+      [
+        0,
+        61
+      ],
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        8
+      ],
+      [
+        1,
+        9
+      ],
+      [
+        1,
+        12
+      ],
+      [
+        1,
+        13
+      ],
+      [
+        1,
+        16
+      ],
+      [
+        1,
+        17
+      ],
+      [
+        1,
+        20
+      ],
+      [
+        1,
+        21
+      ],
+      [
+        1,
+        24
+      ],
+      [
+        1,
+        25
+      ],
+      [
+        1,
+        28
+      ],
+      [
+        1,
+        29
+      ],
+      [
+        1,
+        32
+      ],
+      [
+        1,
+        33
+      ],
+      [
+        1,
+        36
+      ],
+      [
+        1,
+        37
+      ],
+      [
+        1,
+        40
+      ],
+      [
+        1,
+        41
+      ],
+      [
+        1,
+        44
+      ],
+      [
+        1,
+        45
+      ],
+      [
+        1,
+        48
+      ],
+      [
+        1,
+        49
+      ],
+      [
+        1,
+        52
+      ],
+      [
+        1,
+        53
+      ],
+      [
+        1,
+        56
+      ],
+      [
+        1,
+        57
+      ],
+      [
+        1,
+        60
+      ],
+      [
+        1,
+        61
+      ]
+    ],
+    "has_smt_siblings": false
+  },
+  "policy_order_by_repeat": {
+    "1": [
+      "min_delta"
+    ],
+    "2": [
+      "min_delta"
+    ],
+    "3": [
+      "min_delta"
+    ]
+  },
+  "replay_order_by_repeat": {
+    "1": [
+      "sync",
+      "async"
+    ],
+    "2": [
+      "async",
+      "sync"
+    ],
+    "3": [
+      "sync",
+      "async"
+    ]
+  },
+  "runtime_hashes": {
+    "sglang/srt/layers/moe/kt_ep_wrapper.py": "4248a91d19123a5d6129ebdad2e31c52697e388746d70cd03b81ad94971d968d",
+    "sglang/srt/layers/moe/kt_group_expert_buffer.py": "63a7663bbb1bd7235625fb6dff0e8c78efbb3029702bdf80e19c9f0ecebb17fd",
+    "sglang/srt/model_executor/model_runner.py": "5ce681c05c9cdb4064fc749935d8ceb1bf2ef399aa16b56b6aad255c35f67f94",
+    "sglang/srt/model_executor/kt_stage_batch.py": "e40ef54b1ca6b34f236fbd44d3a33019d1042457b3c48a92d2e2aa0675161724",
+    "sglang/srt/managers/scheduler.py": "b06b05ffc1c1d6e9507679d0aedffed2eea2203d7787e8f243d154567f26759e",
+    "sglang/srt/managers/kt_stage_scheduler.py": "d1a9606cd1d28b1cc5bed44b3bf3254d1ea4025d8a2a7d38a2654cdcdf976da0",
+    "sglang/srt/server_args.py": "925095816e7113ebc512545a26cc83c055ceba4fa2e20acc9f8f912e967864fb",
+    "inter_layer_predictor/run_m20_a0_a1.py": "680a36fbda7f1d1fbda614ece93b53baa42eacb40fc25c5499a2f29e5a05d241",
+    "inter_layer_predictor/run_m20_b.py": "c08c4fcdb9cec6350216bf4410b10f9feb1c80e29948bcf99dc9c548dace80dd"
+  },
+  "asset_hashes": {
+    "workload": "1b7ea6af331824b77c84a85840beac7bbb412ac12d7788958cf39b401d835b32",
+    "prompt_identity": "efe072e06c6f9b8cdddd835971f774f98d7330b00d88a11f4e82bb6ab0e2d234",
+    "oracle_trace": "6ec7591cac1b5274716bc50e6c65faa361655ae6dc7fed6d6c3be24da376dfb1",
+    "activation_stats": "493e5e4976a980f34497c56da4e2ba044d44a8d83b46c96027b12364fa81fd38",
+    "model/config.json": "a1ee086a68d0cbfc87316da00ba4b8507bd1292978108e2496201a30a450f438",
+    "model/model.safetensors.index.json": "8dde190b862c7c80ec7403c6495de00c60bbaf246ed479cee4506284989c584c",
+    "model/tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "model/tokenizer_config.json": "a62ff0a2472a0fa1b8eaabcb57c59b58afa42a22831dc141400b6e0cf2b65ce3"
+  },
+  "args": {
+    "output_dir": "/workspace/vl_moe_chunked_prefill_experiment/moe_layered_prefill_system/experiments/m20_b_async_pipeline_formal_g4s4k1q2_p8c8_20260723",
+    "model": "/workspace/vl_moe_chunked_prefill_experiment/moe_layered_prefill_system/assets/model_shim_qwen3",
+    "gguf": "/workspace/vl_moe_chunked_prefill_experiment/third_party/kt_weights/Qwen3-30B-A3B-Instruct-2507-Q8_0.gguf",
+    "prompt_file": "/workspace/vl_moe_chunked_prefill_experiment/workloads/text/sharegpt_long_qwen3_min2048_512.jsonl",
+    "prompt_identity_manifest": "/workspace/vl_moe_chunked_prefill_experiment/outputs/kt_migration/workload_identity/sharegpt_long_qwen3_min2048_512.json",
+    "oracle_trace": "/workspace/vl_moe_chunked_prefill_experiment/outputs/kt_migration/kt_native_oracle_stats/kt_llamafile_tp1_seq2048_128p_gpu64_uniform_sharegpt_long_seq2048_test128_offset128_c4_cps256_top4rec/routed_experts_trace.jsonl",
+    "activation_stats": "/workspace/vl_moe_chunked_prefill_experiment/outputs/kt_migration/kt_native_oracle_stats/sharegpt_long_seq2048_train128_per_layer_top4_activation_stats.pt",
+    "group_size": 4,
+    "slots": 4,
+    "max_replacements": 1,
+    "placement": "oracle",
+    "policies": [
+      "min_delta"
+    ],
+    "include_frequency_baseline": false,
+    "cohort_size": 4,
+    "candidate_window": 8,
+    "max_consecutive": 2,
+    "max_wait_ms": 0.0,
+    "max_inflight_chunks": 8,
+    "stage_h2d_expert_ms": 1.4122813489851813,
+    "stage_d2d_expert_ms": 0.09897066392577603,
+    "stage_route_entry_gain_ms": 0.0020814894469404406,
+    "stage_copy_contention_ms_per_expert": 0.0,
+    "stage_eviction_route_weight": 0.0,
+    "stage_queue_penalty_ms_per_s": 0.0,
+    "stage_min_gain_ms": 0.0,
+    "stage_confidence_threshold": 1.0,
+    "require_physical_paths": true,
+    "repeats": 3,
+    "replay_load_mode": "both",
+    "resume": false,
+    "resource_mode": "exclusive",
+    "exclusive_lock_path": "/tmp/m20_b_async_pipeline_s4_formal.lock",
+    "rotate_policy_order": false,
+    "summarize_existing": false,
+    "plan_only": true,
+    "seq_len": 2048,
+    "num_prompts": 8,
+    "prompt_offset": 128,
+    "warmup_num_prompts": 8,
+    "warmup_prompt_offset": 136,
+    "warmup_concurrency": 8,
+    "concurrency": 8,
+    "chunked_prefill_size": 256,
+    "cpu_threads": 64,
+    "threadpool_count": 2,
+    "cpu_tensor_cache_items": 256,
+    "pin_cpu_tensors": true,
+    "group_integrity_check": false,
+    "mem_fraction_static": 0.7,
+    "max_total_tokens": 40000,
+    "gpu": 2,
+    "base_port": 34100,
+    "server_timeout_s": 1200.0,
+    "client_timeout_s": 1200.0,
+    "timing_log_interval": 1,
+    "stage_cohort_size": 4,
+    "stage_candidate_window": 8,
+    "stage_max_consecutive": 2,
+    "stage_max_wait_ms": 0.0,
+    "stage_max_inflight_chunks": 8,
+    "action_replay_path": null
+  },
+  "specs": [
+    {
+      "group_size": 4,
+      "slots_per_layer": 4,
+      "physical_slots": 32,
+      "max_replacements": 1,
+      "stage_policy": "min_delta",
+      "policy_label": "min_delta",
+      "placement": "oracle",
+      "mode": "b1b_stage_full_oracle_min_delta",
+      "materialization": "full",
+      "action_role": "trace"
+    },
+    {
+      "group_size": 4,
+      "slots_per_layer": 4,
+      "physical_slots": 32,
+      "max_replacements": 1,
+      "stage_policy": "min_delta",
+      "policy_label": "min_delta",
+      "placement": "oracle",
+      "mode": "b1b_stage_delta_replay_oracle_min_delta",
+      "materialization": "delta",
+      "action_role": "replay",
+      "load_mode": "sync"
+    },
+    {
+      "group_size": 4,
+      "slots_per_layer": 4,
+      "physical_slots": 32,
+      "max_replacements": 1,
+      "stage_policy": "min_delta",
+      "policy_label": "min_delta",
+      "placement": "oracle",
+      "mode": "b1b_stage_delta_replay_oracle_min_delta",
+      "materialization": "delta",
+      "action_role": "replay",
+      "load_mode": "async"
+    }
+  ]
+}
