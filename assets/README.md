@@ -20,3 +20,14 @@ GitHub. `environment/README.md` describes the runtime environment.
 On the original workspace these paths are symlinks to the shared assets. A new
 machine may either create equivalent links or set `MOE_ASSET_ROOT` to a
 directory containing the same layout.
+
+Exact sizes and known hashes for cross-machine reproduction are recorded in
+`environment/EXTERNAL_ARTIFACTS.md`.
+
+The required model shards and GGUF are roughly 94 GB together. Deliver this
+directory through the team artifact store with its SHA-256 manifest; do not
+bundle it with the Git repository or the small KT runtime package.
+
+When copying from the original workspace, dereference symlinks (`rsync -aL` or
+equivalent). The `qwen3_gguf` convenience path must resolve to a filename that
+still ends in `.gguf`; otherwise set `GGUF` to the real file explicitly.

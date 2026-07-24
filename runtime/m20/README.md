@@ -22,9 +22,7 @@ source tree as the authority; do not edit only site-packages.
 
 ```bash
 bash runtime/m20/scripts/install_runtime.sh check
-for test in runtime/m20/tests/*.py; do
-  .venv_kt/bin/python "$test"
-done
+bash runtime/m20/scripts/run_m20_smoke_tests.sh
 ```
 
 After a reviewed source change, install it explicitly:

@@ -1,0 +1,250 @@
+diff --git a/kt_kernel/__init__.py b/kt_kernel/__init__.py
+--- a/kt_kernel/__init__.py
++++ b/kt_kernel/__init__.py
+@@ -51,6 +51,35 @@
+ # Import main API
+ from .experts import KTMoEWrapper
+
++
++def generate_gpu_experts_masks(activation_freq, num_gpu_experts):
++    """Generate a boolean GPU-expert mask from activation frequencies.
++
++    Compatibility helper for SGLang's KT EP wrapper.
++    Select the globally top-k layer/expert positions from a 2D tensor
++    shaped [num_layers, num_experts].
++    """
++    import torch
++
++    if not isinstance(activation_freq, torch.Tensor):
++        activation_freq = torch.as_tensor(activation_freq)
++    if activation_freq.dim() != 2:
++        raise ValueError(
++            f"activation_freq must be 2D [num_layers, num_experts], got shape {tuple(activation_freq.shape)}"
++        )
++
++    num_layers, num_experts = activation_freq.shape
++    masks = torch.zeros((num_layers, num_experts), dtype=torch.bool, device="cpu")
++
++    num_to_select = min(int(num_gpu_experts), num_layers * num_experts)
++    if num_to_select <= 0:
++        return masks
++
++    flat_scores = activation_freq.reshape(-1).to(dtype=torch.float32, device="cpu")
++    topk = torch.topk(flat_scores, k=num_to_select, largest=True, sorted=False).indices
++    masks.view(-1)[topk] = True
++    return masks
++
+ # Read version from package metadata (preferred) or fallback to project root
+ try:
+     # Try to get version from installed package metadata (works in installed environment)
+@@ -82,4 +111,10 @@
+     except ImportError:
+         __version__ = "0.4.3"
+
+-__all__ = ["KTMoEWrapper", "kt_kernel_ext", "__cpu_variant__", "__version__"]
++__all__ = [
++    "KTMoEWrapper",
++    "generate_gpu_experts_masks",
++    "kt_kernel_ext",
++    "__cpu_variant__",
++    "__version__",
++]
+diff --git a/kt_kernel/experts.py b/kt_kernel/experts.py
+--- a/kt_kernel/experts.py
++++ b/kt_kernel/experts.py
+@@ -52,14 +52,16 @@
+         num_experts_per_tok: int,
+         hidden_size: int,
+         moe_intermediate_size: int,
+-        num_gpu_experts: int,
+-        cpuinfer_threads: int,
+-        threadpool_count: int,
+-        weight_path: str,
+-        chunked_prefill_size: int,
++        num_gpu_experts: Optional[int] = None,
++        cpuinfer_threads: Optional[int] = None,
++        threadpool_count: Optional[int] = None,
++        weight_path: Optional[str] = None,
++        chunked_prefill_size: int = 0,
+         cpu_save: bool = False,
+         max_deferred_experts_per_token: Optional[int] = None,
+         method: str = "AMXINT4",
++        gpu_experts_mask=None,
++        **kwargs,
+     ):
+         """
+         Factory method to create the appropriate backend implementation.
+@@ -82,6 +84,21 @@
+         Returns:
+             An instance of the appropriate backend implementation (e.g., AMXMoEWrapper)
+         """
++        # SGLang compatibility: accept extra KT EP wrapper arguments that
++        # older direct kt-kernel callers may not pass.
++        _ = kwargs
++        if cpuinfer_threads is None or threadpool_count is None or weight_path is None:
++            raise TypeError(
++                "KTMoEWrapper requires cpuinfer_threads, threadpool_count, and weight_path"
++            )
++        if num_gpu_experts is None:
++            num_gpu_experts = 0
++        if gpu_experts_mask is not None and num_gpu_experts == 0:
++            import torch
++
++            if isinstance(gpu_experts_mask, torch.Tensor):
++                num_gpu_experts = int(gpu_experts_mask.sum().item())
++
+         # Select backend based on method
+         if method in ["AMXINT4", "AMXINT8"]:
+             backend_cls = AMXMoEWrapper
+@@ -95,7 +112,7 @@
+             raise NotImplementedError(f"Unsupported method: {method}")
+
+         # Create and return backend instance
+-        return backend_cls(
++        backend_kwargs = dict(
+             layer_idx=layer_idx,
+             num_experts=num_experts,
+             num_experts_per_tok=num_experts_per_tok,
+@@ -110,6 +127,9 @@
+             max_deferred_experts_per_token=max_deferred_experts_per_token,
+             method=method,
+         )
++        if method == "LLAMAFILE":
++            backend_kwargs["gpu_experts_mask"] = gpu_experts_mask
++        return backend_cls(**backend_kwargs)
+
+     # Forward static methods to the base class
+     @staticmethod
+diff --git a/kt_kernel/experts_base.py b/kt_kernel/experts_base.py
+--- a/kt_kernel/experts_base.py
++++ b/kt_kernel/experts_base.py
+@@ -274,34 +274,47 @@
+         immediate_experts_ids_cpu[current_slot].copy_(immediate_ids, non_blocking=True)
+
+         incremental = BaseMoEWrapper._layer_has_pending_deferred.get(self.layer_idx - 1, False)
+-        self.cpu_infer.submit_with_cuda_stream(
+-            cuda_stream,
+-            self.moe.forward_task(
+-                bsz_slot_tensor.data_ptr(),
+-                immediate_experts_ids_cpu[current_slot].size(-1),
+-                immediate_experts_ids_cpu[current_slot].data_ptr(),
+-                weights_cpu[current_slot].data_ptr(),
+-                input_tensor_cpu[current_slot].data_ptr(),
+-                output_cpu[current_slot].data_ptr(),
+-                incremental,
+-            ),
++        immediate_task = self.moe.forward_task(
++            bsz_slot_tensor.data_ptr(),
++            immediate_experts_ids_cpu[current_slot].size(-1),
++            immediate_experts_ids_cpu[current_slot].data_ptr(),
++            weights_cpu[current_slot].data_ptr(),
++            input_tensor_cpu[current_slot].data_ptr(),
++            output_cpu[current_slot].data_ptr(),
++            incremental,
+         )
++        if hasattr(self.cpu_infer, "submit_with_cuda_stream"):
++            self.cpu_infer.submit_with_cuda_stream(cuda_stream, immediate_task)
++        else:
++            # CPU-only extensions cannot order a worker task behind async D2H copies.
++            if (
++                flat_hidden_states.is_cuda
++                and os.environ.get("KT_KERNEL_SYNC_COPIES_BEFORE_CPU_SUBMIT", "1") == "1"
++            ):
++                torch.cuda.current_stream(flat_hidden_states.device).synchronize()
++            self.cpu_infer.submit(immediate_task)
+
+         BaseMoEWrapper._layer_has_pending_deferred[self.layer_idx] = False
+         if deferred_ids is not None:
+             deferred_experts_ids_cpu[current_slot].copy_(deferred_ids, non_blocking=True)
+-            self.cpu_infer.submit_with_cuda_stream(
+-                cuda_stream,
+-                self.moe.forward_task(
+-                    bsz_slot_tensor.data_ptr(),
+-                    deferred_experts_ids_cpu[current_slot].size(-1),
+-                    deferred_experts_ids_cpu[current_slot].data_ptr(),
+-                    weights_cpu[current_slot].data_ptr(),
+-                    input_tensor_cpu[current_slot].data_ptr(),
+-                    output_cpu[next_slot].data_ptr(),
+-                    False,
+-                ),
++            deferred_task = self.moe.forward_task(
++                bsz_slot_tensor.data_ptr(),
++                deferred_experts_ids_cpu[current_slot].size(-1),
++                deferred_experts_ids_cpu[current_slot].data_ptr(),
++                weights_cpu[current_slot].data_ptr(),
++                input_tensor_cpu[current_slot].data_ptr(),
++                output_cpu[next_slot].data_ptr(),
++                False,
+             )
++            if hasattr(self.cpu_infer, "submit_with_cuda_stream"):
++                self.cpu_infer.submit_with_cuda_stream(cuda_stream, deferred_task)
++            else:
++                if (
++                    flat_hidden_states.is_cuda
++                    and os.environ.get("KT_KERNEL_SYNC_COPIES_BEFORE_CPU_SUBMIT", "1") == "1"
++                ):
++                    torch.cuda.current_stream(flat_hidden_states.device).synchronize()
++                self.cpu_infer.submit(deferred_task)
+             BaseMoEWrapper._layer_has_pending_deferred[self.layer_idx] = True
+
+     def sync_forward(self, hidden_states: torch.Tensor, cuda_stream) -> torch.Tensor:
+@@ -328,7 +341,10 @@
+
+         current_slot = self.layer_idx % KExpertsCPUBuffer.buffer_depth
+         allow_pending = 1 if BaseMoEWrapper._layer_has_pending_deferred.get(self.layer_idx, False) else 0
+-        self.cpu_infer.sync_with_cuda_stream(cuda_stream, allow_pending)
++        if hasattr(self.cpu_infer, "sync_with_cuda_stream"):
++            self.cpu_infer.sync_with_cuda_stream(cuda_stream, allow_pending)
++        else:
++            self.cpu_infer.sync(allow_pending)
+         output_gpu[current_slot].copy_(output_cpu[current_slot], non_blocking=True)
+         return output_gpu[current_slot]
+
+diff --git a/kt_kernel/utils/llamafile.py b/kt_kernel/utils/llamafile.py
+--- a/kt_kernel/utils/llamafile.py
++++ b/kt_kernel/utils/llamafile.py
+@@ -40,6 +40,7 @@
+         chunked_prefill_size: int,
+         cpu_save: bool = False,
+         max_deferred_experts_per_token: Optional[int] = None,
++        gpu_experts_mask: Optional[torch.Tensor] = None,
+         method: str = "LLAMAFILE",
+     ):
+         """
+@@ -133,6 +134,13 @@
+         )
+
+         self.weights_to_keep = None
++        self.gpu_experts_mask = (
++            gpu_experts_mask.detach().to(device="cpu", dtype=torch.bool).contiguous()
++            if gpu_experts_mask is not None
++            else None
++        )
++        self.supports_runtime_gpu_expert_mask = self.gpu_experts_mask is not None
++        self.supports_online_expert_weight_update = False
+
+     def load_weights_from_tensors(
+         self,
+@@ -191,6 +199,8 @@
+             self.moe_intermediate_size,
+             self.num_gpu_experts,
+         )
++        if self.gpu_experts_mask is not None:
++            moe_config.gpu_experts_mask = self.gpu_experts_mask.data_ptr()
+         moe_config.layer_idx = self.layer_idx
+         moe_config.pool = self.cpu_infer.backend_
+
+@@ -220,3 +230,13 @@
+
+         # Drop original weights after loading
+         self.weights_to_keep = None
++
++    def submit_write_weight_scale_to_buffer(self, *args, **kwargs):
++        raise NotImplementedError(
++            "Llamafile backend does not expose write_weight_scale_to_buffer_task. "
++            "It supports init-time GGUF load_weights(), but not runtime CPU/GPU "
++            "expert swap or async expert prefetch."
++        )
++
++    def sync_write_weight_scale_to_buffer(self):
++        self.cpu_infer.sync()

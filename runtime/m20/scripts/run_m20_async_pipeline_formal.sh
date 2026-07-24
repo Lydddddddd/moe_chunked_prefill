@@ -13,34 +13,56 @@ source "$M20/scripts/gpu_resource_gate.sh"
 # Resolve symlinked repository assets before passing them to the runtime.  The
 # KT LLAMAFILE loader identifies a GGUF input from its filename suffix, so the
 # stable assets/qwen3_gguf convenience link must become the real .gguf path.
-ASSET_ROOT="$ROOT/assets"
-GGUF=$(readlink -f "${GGUF:-$ASSET_ROOT/qwen3_gguf}")
-PROMPT_FILE=$(readlink -f "${PROMPT_FILE:-$ASSET_ROOT/workloads/text/sharegpt_long_qwen3_min2048_512.jsonl}")
-PROMPT_IDENTITY_MANIFEST=$(readlink -f "${PROMPT_IDENTITY_MANIFEST:-$ASSET_ROOT/workload_identity/sharegpt_long_qwen3_min2048_512.json}")
-ORACLE_TRACE=$(readlink -f "${ORACLE_TRACE:-$ASSET_ROOT/kt_native_oracle_stats/kt_llamafile_tp1_seq2048_128p_gpu64_uniform_sharegpt_long_seq2048_test128_offset128_c4_cps256_top4rec/routed_experts_trace.jsonl}")
-ACTIVATION_STATS=$(readlink -f "${ACTIVATION_STATS:-$ASSET_ROOT/kt_native_oracle_stats/sharegpt_long_seq2048_train128_per_layer_top4_activation_stats.pt}")
+ASSET_ROOT=${MOE_ASSET_ROOT:-"$ROOT/assets"}
+resolve_asset() {
+  local label=$1
+  local candidate=$2
+  local resolved
+  resolved=$(readlink -f -- "$candidate" 2>/dev/null || true)
+  if [[ -z "$resolved" || ! -f "$resolved" ]]; then
+    echo "required $label is missing or not a file: $candidate" >&2
+    exit 1
+  fi
+  printf '%s\n' "$resolved"
+}
+GGUF=$(resolve_asset "GGUF" "${GGUF:-$ASSET_ROOT/qwen3_gguf}")
+PROMPT_FILE=$(resolve_asset "workload" "${PROMPT_FILE:-$ASSET_ROOT/workloads/text/sharegpt_long_qwen3_min2048_512.jsonl}")
+PROMPT_IDENTITY_MANIFEST=$(resolve_asset "prompt identity manifest" "${PROMPT_IDENTITY_MANIFEST:-$ASSET_ROOT/workload_identity/sharegpt_long_qwen3_min2048_512.json}")
+ORACLE_TRACE=$(resolve_asset "oracle trace" "${ORACLE_TRACE:-$ASSET_ROOT/kt_native_oracle_stats/kt_llamafile_tp1_seq2048_128p_gpu64_uniform_sharegpt_long_seq2048_test128_offset128_c4_cps256_top4rec/routed_experts_trace.jsonl}")
+ACTIVATION_STATS=$(resolve_asset "activation stats" "${ACTIVATION_STATS:-$ASSET_ROOT/kt_native_oracle_stats/sharegpt_long_seq2048_train128_per_layer_top4_activation_stats.pt}")
 
 GPU=${GPU:-2}
 CPUSET=${CPUSET:-0-63}
 BASE_PORT=${BASE_PORT:-33900}
-OUTPUT_DIR=${OUTPUT_DIR:-$EXPERIMENTS/m20_b_async_pipeline_formal_g4s8k1_p8c8_20260722}
+RUN_TAG=${RUN_TAG:-$(date -u +%Y%m%dT%H%M%SZ)}
+OUTPUT_DIR=${OUTPUT_DIR:-$EXPERIMENTS/m20_b_external_reproduction_g4s8k1q2_p8c8_$RUN_TAG}
 GROUP_SIZE=${GROUP_SIZE:-4}
 SLOTS=${SLOTS:-8}
 MAX_REPLACEMENTS=${MAX_REPLACEMENTS:-1}
 COHORT_SIZE=${COHORT_SIZE:-4}
 CANDIDATE_WINDOW=${CANDIDATE_WINDOW:-8}
-MAX_CONSECUTIVE=${MAX_CONSECUTIVE:-4}
+MAX_CONSECUTIVE=${MAX_CONSECUTIVE:-2}
 MAX_WAIT_MS=${MAX_WAIT_MS:-0}
 MAX_INFLIGHT_CHUNKS=${MAX_INFLIGHT_CHUNKS:-8}
+REPEATS=${REPEATS:-3}
+CPU_THREADS=${CPU_THREADS:-64}
+MAX_ATTEMPTS_PER_REPEAT=${MAX_ATTEMPTS_PER_REPEAT:-2}
 EXCLUSIVE_LOCK_PATH=${EXCLUSIVE_LOCK_PATH:-/tmp/m20_b_async_pipeline_formal.lock}
 WAIT_FOR_HOST_QUIET=${WAIT_FOR_HOST_QUIET:-1}
 WAIT_FOR_GPU_QUIET=${WAIT_FOR_GPU_QUIET:-1}
 HOST_QUIET_REQUIRED_PASSES=${HOST_QUIET_REQUIRED_PASSES:-2}
 GPU_QUIET_REQUIRED_PASSES=${GPU_QUIET_REQUIRED_PASSES:-3}
 
-H2D_MS=${H2D_MS:-1.427118586964988}
-D2D_MS=${D2D_MS:-0.10408825399043947}
-ROUTE_MS=${ROUTE_MS:-0.005176338825467556}
+H2D_MS=${H2D_MS:-1.4122813489851813}
+D2D_MS=${D2D_MS:-0.09897066392577603}
+ROUTE_MS=${ROUTE_MS:-0.0020814894469404406}
+
+[[ "$REPEATS" =~ ^[1-9][0-9]*$ ]] || { echo "REPEATS must be a positive integer" >&2; exit 2; }
+[[ "$CPU_THREADS" =~ ^[1-9][0-9]*$ ]] || { echo "CPU_THREADS must be a positive integer" >&2; exit 2; }
+[[ "$MAX_ATTEMPTS_PER_REPEAT" =~ ^[1-9][0-9]*$ ]] || {
+  echo "MAX_ATTEMPTS_PER_REPEAT must be a positive integer" >&2
+  exit 2
+}
 
 runner_args=(
   --output-dir "$OUTPUT_DIR"
@@ -76,7 +98,7 @@ runner_args=(
   --warmup-concurrency 8
   --concurrency 8
   --max-total-tokens 40000
-  --cpu-threads 64
+  --cpu-threads "$CPU_THREADS"
   --threadpool-count 2
   --cpu-tensor-cache-items 256
   --pin-cpu-tensors
@@ -110,18 +132,20 @@ fi
 
 bash "$M20/scripts/install_runtime.sh" check
 
-# Freeze the complete three-repeat contract before incremental execution. A
-# later --resume keeps this provenance even while each invocation only extends
-# the completed prefix by one repeat.
+# Freeze the complete requested-repeat contract before incremental execution.
+# A later --resume keeps this provenance while each invocation only extends the
+# completed prefix by one repeat.
 if [[ ! -f "$OUTPUT_DIR/provenance.json" ]]; then
   taskset -c "$CPUSET" "$PYTHON" \
     "$M20/inter_layer_predictor/run_m20_b.py" \
-    "${runner_args[@]}" --repeats 3 --plan-only >/dev/null
+    "${runner_args[@]}" --repeats "$REPEATS" --plan-only >/dev/null
 fi
 
 target_repeat=1
-while ((target_repeat <= 3)); do
+while ((target_repeat <= REPEATS)); do
+  attempt=0
   while true; do
+    attempt=$((attempt + 1))
     wait_for_host_quiet
     wait_for_gpu_quiet "$GPU"
 
@@ -149,9 +173,14 @@ while ((target_repeat <= 3)); do
       echo "archived GPU-contaminated suite at $invalid_dir; restarting" >&2
       taskset -c "$CPUSET" "$PYTHON" \
         "$M20/inter_layer_predictor/run_m20_b.py" \
-        "${runner_args[@]}" --repeats 3 --plan-only >/dev/null
+        "${runner_args[@]}" --repeats "$REPEATS" --plan-only >/dev/null
       target_repeat=1
+      attempt=0
       continue
+    fi
+    if ((attempt >= MAX_ATTEMPTS_PER_REPEAT)); then
+      echo "repeat prefix $target_repeat is still incomplete after $attempt attempts" >&2
+      exit 1
     fi
     echo "repeat prefix $target_repeat incomplete (runner status $status); retrying" >&2
   done
@@ -162,12 +191,22 @@ done
 status=0
 taskset -c "$CPUSET" "$PYTHON" \
   "$M20/inter_layer_predictor/run_m20_b.py" \
-  "${runner_args[@]}" --repeats 3 --summarize-existing || status=$?
+  "${runner_args[@]}" --repeats "$REPEATS" --summarize-existing || status=$?
 
-if ! jq -e '.complete and .correctness_passed and .formal_eligible' \
-  "$OUTPUT_DIR/pipeline_acceptance.json" >/dev/null; then
-  echo "formal suite is incomplete or resource-ineligible" >&2
-  exit 1
+if ((REPEATS >= 3)); then
+  if ! jq -e '.complete and .correctness_passed and .formal_eligible' \
+    "$OUTPUT_DIR/pipeline_acceptance.json" >/dev/null; then
+    echo "formal suite is incomplete or resource-ineligible" >&2
+    exit 1
+  fi
+else
+  if ! jq -e --argjson expected "$REPEATS" \
+    '.complete and .correctness_passed and .resource_audit.passed and
+     (.expected_pairs == $expected)' \
+    "$OUTPUT_DIR/pipeline_acceptance.json" >/dev/null; then
+    echo "screen suite is incomplete or failed correctness/resource gates" >&2
+    exit 1
+  fi
 fi
 
 jq '{passed, correctness_passed, formal_eligible, performance_passed,

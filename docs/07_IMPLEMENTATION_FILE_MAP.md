@@ -71,9 +71,7 @@ Run them from the repository root:
 
 ```bash
 bash runtime/m20/scripts/install_runtime.sh check
-for test in runtime/m20/tests/*.py; do
-  .venv_kt/bin/python "$test"
-done
+bash runtime/m20/scripts/run_m20_smoke_tests.sh
 ```
 
 ## External Requirements

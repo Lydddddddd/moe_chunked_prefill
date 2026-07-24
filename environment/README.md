@@ -10,13 +10,14 @@ Create a base virtual environment with:
 bash environment/bootstrap_env.sh
 ```
 
-This does not by itself reproduce the validated runtime. Two local additions are
+This does not by itself reproduce the validated runtime. Two external inputs are
 required before an end-to-end M20 run:
 
-1. Install the team-approved `kt-kernel` patch. The validated environment has
-   source changes in `kt_kernel/__init__.py`, `experts.py`, `experts_base.py`,
-   and `utils/llamafile.py`, plus an AVX2 extension. This patch is not yet
-   packaged as a clean installer, so obtain it from the team artifact store.
+1. Extract the team-approved external runtime bundle under
+   `environment/external_runtime/`, then run
+   `bash environment/install_kt_kernel_patch.sh`. The four Python changes are
+   versioned in Git; the bundle supplies the CPython 3.10 AVX2 extension and
+   `libhwloc.so.15`.
 2. Provide the model, GGUF, workload, prompt-identity manifest, and oracle
    traces listed in `assets/README.md`.
 
@@ -25,17 +26,26 @@ After those are available, apply and check the versioned SGLang M20 patch:
 ```bash
 bash runtime/m20/scripts/install_runtime.sh install
 bash runtime/m20/scripts/install_runtime.sh check
-for test in runtime/m20/tests/*.py; do
-  .venv_kt/bin/python "$test"
-done
+bash runtime/m20/scripts/run_m20_smoke_tests.sh
 ```
 
-Some hosts also require the bundled hwloc library before launching SGLang:
+The project scripts automatically use the bundled hwloc library when it is
+under `environment/external_runtime/lib`. For a custom extraction path, export:
 
 ```bash
-export LD_LIBRARY_PATH="/path/to/hwloc/root/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
+export EXTERNAL_RUNTIME_DIR=/path/to/external_runtime
+export LD_LIBRARY_PATH="$EXTERNAL_RUNTIME_DIR/lib:${LD_LIBRARY_PATH:-}"
 ```
 
-The source patch is complete and checked into this repository. The kt-kernel
-patch and large runtime assets remain external until they are frozen into a
-reproducible artifact package.
+The complete source patch is checked into this repository. Model weights,
+GGUF, oracle data, and the platform-specific AVX2 extension remain external.
+
+For cross-machine handoff, verify all dependency and artifact hashes before
+running tests:
+
+```bash
+bash environment/verify_external_environment.sh
+```
+
+See `EXTERNAL_ARTIFACTS.md` and `docs/11_EXTERNAL_REPRODUCTION_HANDOFF.md` for
+the exact delivery and return-artifact contract.

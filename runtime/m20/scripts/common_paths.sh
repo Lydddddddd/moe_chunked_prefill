@@ -11,5 +11,10 @@ if [[ ! -x "${M20_PYTHON}" && -x "${M20_PROJECT_ROOT}/../.venv_kt/bin/python" ]]
   M20_PYTHON="${M20_PROJECT_ROOT}/../.venv_kt/bin/python"
 fi
 
-M20_MODEL=${MODEL:-"${M20_PROJECT_ROOT}/assets/model_shim_qwen3"}
+M20_ASSET_ROOT=${MOE_ASSET_ROOT:-"${M20_PROJECT_ROOT}/assets"}
+M20_MODEL=${MODEL:-"${M20_ASSET_ROOT}/model_shim_qwen3"}
 M20_EXPERIMENTS=${EXPERIMENTS:-"${M20_PROJECT_ROOT}/experiments"}
+M20_EXTERNAL_RUNTIME_DIR=${EXTERNAL_RUNTIME_DIR:-"${M20_PROJECT_ROOT}/environment/external_runtime"}
+if [[ -d "${M20_EXTERNAL_RUNTIME_DIR}/lib" ]]; then
+  export LD_LIBRARY_PATH="${M20_EXTERNAL_RUNTIME_DIR}/lib:${LD_LIBRARY_PATH:-}"
+fi
